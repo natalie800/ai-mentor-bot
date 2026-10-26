@@ -34,14 +34,19 @@ def start_message(message):
                 InlineKeyboardButton("Да", callback_data="answer_yes"),
                 InlineKeyboardButton("Нет", callback_data="answer_no"),
                 )
-            bot.send_message(message.chat.id,"Я не совсем понял. Пожалуйста, напиши 'да' или 'нет'. ", reply_markup=markup)
+            bot.send_message(message.chat.id,"Я не совсем понял. Пожалуйста, выбери 'да' или 'нет'. ", reply_markup=markup)
     
     bot.register_next_step_handler(message, check_answer) 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     if call.data == "mode_info":
-        bot.send_message(call.message.chat.id,"Отлично! Здесь я буду помогать подбирать вузы и искать стажировки.")
+        
+        markup = InlineKeyboardMarkup()
+        btn_unis = InlineKeyboardButton("Вузы", callback_data="info_unis")
+        btn_internships = InlineKeyboardButton("Стажировки", callback_data="info_internships")
+        markup.add(btn_unis, btn_internships)
+        bot.send_message(call.message.chat.id, "Отлично! Выбери, что будем искать:", reply_markup=markup)
     
     elif call.data == "mode_train":
         bot.send_message(call.message.chat.id,"Круто! Здесь мы будем тренироваться к поступлению или стажировке, а также попробуем создать твой индивидуальный план по подготовке.")
@@ -50,9 +55,13 @@ def callback_handler(call):
         bot.send_message(call.message.chat.id,"Понимаю. Если захочешь поболтать, просто напиши /start. Я всегда здесь!")
     
     elif call.data == "answer_yes":
-        bot.send_message(call.message.chat.id, "Отлично! ")
+         markup = InlineKeyboardMarkup()
+         btn_info = InlineKeyboardButton("Справочник", callback_data="mode_info")
+         btn_train = InlineKeyboardButton("Тренажёр", callback_data="mode_train")
+         markup.add(btn_info, btn_train)
+         bot.send_message(call.message.chat.id,"Отлично! Вот, что я умею (мои два режима):", reply_markup=markup)
     elif call.data == "answer_no":
-        bot.send_message(call.message.chat.id, "Понимаю.")
+        bot.send_message(call.message.chat.id, "Понимаю. Тогда в следующий раз.")
     else:
         bot.send_message(call.message.chat.id, "В разработке")
 
