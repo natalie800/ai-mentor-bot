@@ -43,9 +43,12 @@ def callback_handler(call):
     if call.data == "mode_info":
         
         markup = InlineKeyboardMarkup()
-        btn_unis = InlineKeyboardButton("Вузы", callback_data="info_unis")
+        btn_unis = InlineKeyboardButton("Поступление", callback_data="info_unis")
+        btn_interview = InlineKeyboardButton("Собеседование", callback_data="info_unis")
         btn_internships = InlineKeyboardButton("Стажировки", callback_data="info_internships")
-        markup.add(btn_unis, btn_internships)
+        markup.add(btn_unis)
+        markup.add(btn_interview)
+        markup.add(btn_internships)
         bot.send_message(call.message.chat.id, "Отлично! Выбери, что будем искать:", reply_markup=markup)
     
     elif call.data == "mode_train":
