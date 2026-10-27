@@ -44,7 +44,7 @@ def callback_handler(call):
         
         markup = InlineKeyboardMarkup()
         btn_unis = InlineKeyboardButton("Поступление", callback_data="info_unis")
-        btn_interview = InlineKeyboardButton("Собеседование", callback_data="info_unis")
+        btn_interview = InlineKeyboardButton("Собеседование", callback_data="info_interview")
         btn_internships = InlineKeyboardButton("Стажировки", callback_data="info_internships")
         markup.add(btn_unis)
         markup.add(btn_interview)
@@ -57,14 +57,25 @@ def callback_handler(call):
     elif call.data == "dont_wanna":
         bot.send_message(call.message.chat.id,"Понимаю. Если захочешь поболтать, просто напиши /start. Я всегда здесь!")
     
+    elif call.data == "answer_no":
+        bot.send_message(call.message.chat.id, "Понимаю. Тогда в следующий раз.")
+
     elif call.data == "answer_yes":
          markup = InlineKeyboardMarkup()
          btn_info = InlineKeyboardButton("Справочник", callback_data="mode_info")
          btn_train = InlineKeyboardButton("Тренажёр", callback_data="mode_train")
          markup.add(btn_info, btn_train)
          bot.send_message(call.message.chat.id,"Отлично! Вот, что я умею (мои два режима):", reply_markup=markup)
-    elif call.data == "answer_no":
-        bot.send_message(call.message.chat.id, "Понимаю. Тогда в следующий раз.")
+
+    elif call.data == "info_unis":
+         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup)
+
+    elif call.data == "info_interview":
+         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup)
+
+    elif call.data == "info_internships":
+         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup)
+         
     else:
         bot.send_message(call.message.chat.id, "В разработке")
 
