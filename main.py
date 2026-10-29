@@ -54,8 +54,49 @@ def callback_handler(call):
         bot.send_message(call.message.chat.id, "Отлично! Выбери, что будем искать:", reply_markup=markup)
     
     elif call.data == "mode_train":
-        bot.send_message(call.message.chat.id,"Круто! Здесь мы будем тренироваться к поступлению или стажировке, а также попробуем создать твой индивидуальный план по подготовке.")
+
+        markup_train = InlineKeyboardMarkup()
+        btn_train_ib = InlineKeyboardButton("Информационная безопасность", callback_data="train_ib")
+        btn_train_other = InlineKeyboardButton("Другая специальность", callback_data="train_other")
+
+        markup_train.add(btn_train_ib)
+        markup_train.add(btn_train_other)
+
+        bot.send_message(call.message.chat.id,"Круто! Здесь мы будем тренироваться к поступлению или стажировке, а также попробуем создать твой индивидуальный план по подготовке.\n Какая специальность тебя интересует?")
+
+    elif call.data == "train_ib":
+        with open('database.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        
+        question_data = data['interview'][0]
+
+        msg = bot.send_message(call.message.chat.id, f"<b> Вопрос на собеседовании:</b>\n\n{question_data['question']}\n\nНапиши свой ответ сообщением:")
+
+        bot.register_next_step_handler(msg, check_interview)
+
+def check_interview(message):
+    user_text = message.text.lower()
+
+    with open('database.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
     
+    q_data = data['interview'][0]
+
+    if len(user_text) <10 or "не знаю" in user_text or "не умею" in user_text:
+        bot.send_message(message.chat.id, f"<b> Ошибка!<b> Так отвечать не стоит.\n\nПример плохого ответа: {q_data['bad_answer']}\n\n <b> Совет:<b> {q_data['trip']}", parse_mode='HTML')
+    else:
+        bot.send_message(message.chat.id, f"<b> Отличный ответ!<b>\n\nВот как можно было ответить ещё лучше: {q_data['good_answer']}\n\n <b> Совет:<b> {q_data['trip']}", parse_mode='HTML')
+   
+
+    elif call.data == "train_other":
+
+        markup_back_train = InlineKeyboardMarkup()
+        btn_back_train = InlineKeyboardButton("Вернуться к выбору", callback_data="mode_train")
+        markup_back_train.add(btn_back_train)
+        
+        bot.send_message(call.message.chat.id, "Ой, Информация по этой специальности пока в разработке. Попробуй выбрать ИБ или приходи позже.", reply_markup=markup_back_train)
+    
+
     elif call.data == "dont_wanna":
         bot.send_message(call.message.chat.id,"Понимаю. Если захочешь поболтать, просто напиши /start. Я всегда здесь!")
     
