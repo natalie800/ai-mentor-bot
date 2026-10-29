@@ -49,9 +49,11 @@ def callback_handler(call):
         btn_unis = InlineKeyboardButton("Поступление", callback_data="info_unis")
         btn_interview = InlineKeyboardButton("Собеседование", callback_data="info_interview")
         btn_internships = InlineKeyboardButton("Стажировка", callback_data="info_internships")
+        btn_knowledge = InlineKeyboardButton("База знаний", callback_data="knowledge_menu")
         markup.add(btn_unis)
         markup.add(btn_interview)
         markup.add(btn_internships)
+        markup.add(btn_knowledge)
         bot.send_message(call.message.chat.id, "Отлично! Выбери, что будем искать:", reply_markup=markup)
         
     elif call.data == "mode_train":
@@ -176,6 +178,32 @@ def callback_handler(call):
             markup_back.add(btn_train_ib, btn_back)
         
             bot.send_message(call.message.chat.id, text, parse_mode='HTML', reply_markup=markup_back)
+
+    elif call.data == "knowledge_menu":
+        markup_knowledge = InlineKeyboardMarkup()
+        btn_kitchen = InlineKeyboardButton("Отзывы (Внутренняя кухня)", callback_data="kb_kitchen")
+        btn_academic = InlineKeyboardButton("Академическая литература", callback_data="kb_academic")
+        markup_knowledge.add(btn_kitchen)
+        markup_knowledge.add(btn_academic)
+        bot.send_message(call.message.chat.id, "Здесь собраны реальные кейсы, отзывы и ссылки на источники. Что посмотрим?", reply_markup=markup_knowledge)
+
+    elif call.data == "kb_kitchen":
+        with open('database.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        kb = data['knowledge_base']['internal_kitchen']
+        text = f"<b>{kb['title']}</b>\n\n{kb['text']}\n\n<b>Источники:</b>\n"
+        for src in kb['sources']:
+            text += f"- <a href='{src['link']}'>{src['name']}</a>\n"
+        bot.send_message(call.message.chat.id, text, parse_mode='HTML')
+
+    elif call.data == "kb_academic":
+        with open('database.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        kb = data['knowledge_base']['academic_literature']
+        text = f"<b>{kb['title']}</b>\n\n{kb['text']}\n\n<b>Источники:</b>\n"
+        for src in kb['sources']:
+            text += f"- <a href='{src['link']}'>{src['name']}</a>\n"
+        bot.send_message(call.message.chat.id, text, parse_mode='HTML')
          
     else:
         bot.send_message(call.message.chat.id, "В разработке, скоро появится")
@@ -205,7 +233,7 @@ def check_interview(message):
     # Анализ на типовые ошибки (п.6)
     bad_words = ["не знаю", "не умею", "деньг", "денег", "зарплат", "оплат", "плат", "бабк", "бабл", "нажив"]
     if len(user_text) < 40 or any(word in user_text for word in bad_words):
-        bot.send_message(message.chat.id, f"❌<b>Ошибка!</b> Так отвечать не стоит.\n\nПример плохого: {q_data['bad_answer']}\n\n<b>Совет:</b> {q_data['tip']}", parse_mode='HTML')
+        bot.send_message(message.chat.id, f"❌<b>Ошибка!</b> Так отвечать не стоит.\n\nПример плохого: {q_data['bad_answer']}\n\n<b>Совет:</b> {q_data['tip']}\n\n<i>💡 Обрати внимание: почитай наш раздел «Внутренняя кухня» в Справочнике, там реальные отзывы тех, кто уже проходил через это!</i>", parse_mode='HTML')
     else:
         bot.send_message(message.chat.id, f"✅<b>Отличный ответ!</b>\n\nКак надо: {q_data['good_answer']}\n\n<b>Совет:</b> {q_data['tip']}", parse_mode='HTML')
         score += 1  # Начисляем балл
