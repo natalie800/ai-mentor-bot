@@ -1,5 +1,6 @@
 import os
 import telebot
+import json
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from dotenv import load_dotenv
 
@@ -40,12 +41,13 @@ def start_message(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
+
     if call.data == "mode_info":
         
         markup = InlineKeyboardMarkup()
         btn_unis = InlineKeyboardButton("Поступление", callback_data="info_unis")
         btn_interview = InlineKeyboardButton("Собеседование", callback_data="info_interview")
-        btn_internships = InlineKeyboardButton("Стажировки", callback_data="info_internships")
+        btn_internships = InlineKeyboardButton("Стажировка", callback_data="info_internships")
         markup.add(btn_unis)
         markup.add(btn_interview)
         markup.add(btn_internships)
@@ -68,16 +70,58 @@ def callback_handler(call):
          bot.send_message(call.message.chat.id,"Отлично! Вот, что я умею (мои два режима):", reply_markup=markup)
 
     elif call.data == "info_unis":
-         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup)
+        markup_spec = InlineKeyboardMarkup()
+        btn_ib = InlineKeyboardButton("Информационная безопасность", callback_data="spec_ib")
+        btn_other = InlineKeyboardButton("Другая специальность", callback_data="spec_other")
+        markup_spec.add(btn_ib)
+        markup_spec.add(btn_other)
+
+        bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup_spec)
+
+    elif call.data == "spec_ib": 
+        with open('database.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            
+        text = "<b>Вузы по Информационной безопасности:</b>\n\n"
+
+        for vuz in data['admission']:
+            if "безопасность" in vuz['program'].lower():
+                text += f"<b>{vuz['university']}</b>\n"
+                text += f"Направление: {vuz['program']}\n"
+                text += f"Баллы: {vuz['score']}\n"
+                text += f"<a href='{vuz['source']}'>Сайт вуза</a>\n\n"
+        
+        text += "<i>Рекомендации носят ознакомительный характер и не заменяют официальные требования вузов и работодателей.</i>"
+        
+        bot.send_message(call.message.chat.id, text, parse_mode='HTML')
+
+    elif call.data == "spec_other":
+
+        markup_back = InlineKeyboardMarkup()
+        btn_back = InlineKeyboardButton("Вернуться к выбору", callback_data="info_unis")
+        markup_back.add(btn_back)
+        
+        bot.send_message(call.message.chat.id, "Ой, Информация по этой специальности пока в разработке. Но я уже учусь её искать! Возращайся чуть позже или выбери ИБ.", reply_markup=markup_back)
+    
+    elif call.data == "info_internships":
+
+        markup_intern = InlineKeyboardMarkup()
+        btn_intern_ib = InlineKeyboardButton("Информационная безопасность", callback_data="intern_ib")
+        btn_intern_other = InlineKeyboardButton("Другая специальность", callback_data="intern_other")
+
+        markup_intern.add(btn_intern_ib)
+        markup_intern.add(btn_intern_other)
+
+        bot.send_message(call.message.chat.id,"Хорошо, в какой сфере ты ищещь стажировку?")
+
 
     elif call.data == "info_interview":
-         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup)
+         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?")
 
-    elif call.data == "info_internships":
-         bot.send_message(call.message.chat.id,"Отлично! Какая у тебя специальность?", reply_markup=markup)
+
          
     else:
-        bot.send_message(call.message.chat.id, "В разработке")
+        bot.send_message(call.message.chat.id, "В разработке, скоро появится")
 
     bot.answer_callback_query(call.id)
 print("Бот запущен и работает безопасно")
