@@ -9,6 +9,8 @@ load_dotenv()
 TOKEN= os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(TOKEN)
 
+user_progress = {}
+
 @bot.message_handler(commands=['start'])
 def start_message(message):
     bot.send_message(message.chat.id, "Привет! Я бот ~Treasure Map~\n Хочешь узнать, что я умею?")
@@ -65,10 +67,12 @@ def callback_handler(call):
         with open('database.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
         
-        question_data = data['interview'][0]
-        msg = bot.send_message(call.message.chat.id, f"<b>Вопрос на собеседовании:</b>\n\n{question_data['question']}\n\nНапиши свой ответ сообщением:", parse_mode='HTML')
         
-        # Ждем ответа пользователя
+        user_progress[call.message.chat.id] = {"step": 0, "score": 0}
+        
+        q_data = data['interview'][0]
+        msg = bot.send_message(call.message.chat.id, f"<b>Вопрос 1/3:</b>\n\n{q_data['question']}\n\nНапиши свой ответ:", parse_mode='HTML')
+        
         bot.register_next_step_handler(msg, check_interview)
 
     elif call.data == "train_other":
@@ -182,29 +186,56 @@ def callback_handler(call):
     
 def check_interview(message):
     if not message.text:
-        bot.send_message(message.chat.id, "Пожалуйста, напиши свой ответ текстом ")
+        bot.send_message(message.chat.id, "Пожалуйста, напиши свой ответ текстом 🙂")
         return
 
     user_text = message.text.lower()
+    chat_id = message.chat.id
 
     with open('database.json', 'r', encoding='utf-8') as file:
         data = json.load(file)
     
-    q_data = data['interview'][0]
-
-    markup_after = InlineKeyboardMarkup()
-    btn_try_again = InlineKeyboardButton("Пройти ещё раз", callback_data="train_ib")
-    btn_to_menu = InlineKeyboardButton("В меню", callback_data="answer_yes")
-    markup_after.add(btn_try_again, btn_to_menu)
-
-   
-    bad_words = ["не знаю", "не умею", "деньг", "зарплат", "бабк", "бабл", "просто"]
-    is_bad = len(user_text) < 30 or any(word in user_text for word in bad_words)
-
-    if is_bad:
-        bot.send_message(message.chat.id, f"❌<b>Ошибка!</b> Так отвечать не стоит.\n\nПример плохого ответа: {q_data['bad_answer']}\n\n<b>Совет:</b> {q_data['tip']}", parse_mode='HTML', reply_markup=markup_after)
-    else:
-        bot.send_message(message.chat.id, f"✅<b>Отличный ответ!</b>\n\nВот как можно было ответить ещё лучше: {q_data['good_answer']}\n\n<b>Совет:</b> {q_data['tip']}", parse_mode='HTML', reply_markup=markup_after)
+    # Узнаем, на каком вопросе сейчас пользователь (если нет данных, начинаем с 0)
+    progress = user_progress.get(chat_id, {"step": 0, "score": 0})
+    step = progress["step"]
+    score = progress["score"]
     
+    q_data = data['interview'][step]
+
+    # Анализ на типовые ошибки (п.6)
+    bad_words = ["не знаю", "не умею", "деньг", "денег", "зарплат", "оплат", "плат", "бабк", "бабл", "нажив"]
+    if len(user_text) < 40 or any(word in user_text for word in bad_words):
+        bot.send_message(message.chat.id, f"❌<b>Ошибка!</b> Так отвечать не стоит.\n\nПример плохого: {q_data['bad_answer']}\n\n<b>Совет:</b> {q_data['tip']}", parse_mode='HTML')
+    else:
+        bot.send_message(message.chat.id, f"✅<b>Отличный ответ!</b>\n\nКак надо: {q_data['good_answer']}\n\n<b>Совет:</b> {q_data['tip']}", parse_mode='HTML')
+        score += 1  # Начисляем балл
+
+    # Переходим к следующему вопросу
+    step += 1
+    user_progress[chat_id] = {"step": step, "score": score}
+
+    # Если вопросы в JSON закончились - выдаем индивидуальный план
+    if step < len(data['interview']):
+        next_q = data['interview'][step]
+        msg = bot.send_message(message.chat.id, f"<b>Вопрос {step + 1}/{len(data['interview'])}:</b>\n\n{next_q['question']}\n\nНапиши свой ответ:", parse_mode='HTML')
+        bot.register_next_step_handler(msg, check_interview)
+    else:
+        # План на основе набранных баллов
+        markup_end = InlineKeyboardMarkup()
+        btn_back = InlineKeyboardButton("В меню", callback_data="answer_yes")
+        markup_end.add(btn_back)
+        
+        plan_text = f"<b>🎉 Тренировка завершена!</b>\nТвой результат: {score} из {len(data['interview'])} правильных ответов.\n\n"
+        if score == len(data['interview']):
+            plan_text += "<b>Твой индивидуальный план:</b> Ты отлично знаешь, как общаться с работодателем! Твой следующий шаг — искать реальные стажировки в разделе Справочник."
+        else:
+            plan_text += "<b>Твой индивидуальный план:</b> Тебе стоит еще раз изучить раздел 'Собеседование' (шпаргалку) и обратить внимание на то, как правильно презентовать свои проекты и мотивацию."
+            
+        bot.send_message(chat_id, plan_text, parse_mode='HTML', reply_markup=markup_end)
+        
+        
+        if chat_id in user_progress:
+            del user_progress[chat_id]
+
 print("Бот запущен и работает безопасно")
 bot.infinity_polling()
