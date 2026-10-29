@@ -91,7 +91,7 @@ def callback_handler(call):
                 text += f"Баллы: {vuz['score']}\n"
                 text += f"<a href='{vuz['source']}'>Сайт вуза</a>\n\n"
         
-        text += "<i>Рекомендации носят ознакомительный характер и не заменяют официальные требования вузов и работодателей.</i>"
+        text += "<i>⚠️ Рекомендации носят ознакомительный характер и не заменяют официальные требования вузов и работодателей.</i>"
         
         bot.send_message(call.message.chat.id, text, parse_mode='HTML')
 
@@ -112,7 +112,42 @@ def callback_handler(call):
         markup_intern.add(btn_intern_ib)
         markup_intern.add(btn_intern_other)
 
-        bot.send_message(call.message.chat.id,"Хорошо, в какой сфере ты ищещь стажировку?")
+        bot.send_message(call.message.chat.id,"Хорошо, в какой сфере ты ищещь стажировку?",reply_markup=markup_intern)
+
+
+    elif call.data == "intern_ib":
+        with open('database.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            
+        text = " <b>Доступные стажировки в сфере ИБ:</b>\n\n"
+        found = False
+        
+        for job in data['internship']:
+            found = True
+            company = job.get('company', 'Компания не указана')
+            role = job.get('role', 'Стажер')
+            reqs = job.get('requirements', 'Требования не указаны')
+            link = job.get('source', '#')
+       
+            text += f"<b>{company}</b>\n"
+            text += f"Роль: {role}\n"
+            text += f"Требования: {reqs}\n"
+            text += f"🔗 <a href='{link}'>Узнать подробнее</a>\n\n"
+       
+        if not found:
+            text += "Пока в базе нет активных стажировок в этой сфере.\n\n"
+            
+        text += "<i>⚠️ Рекомендации носят ознакомительный характер и не заменяют официальные требования работодателей.</i>"
+           
+        bot.send_message(call.message.chat.id, text, parse_mode='HTML')
+        
+    elif call.data == "intern_other":
+
+        markup_back_intern = InlineKeyboardMarkup()
+        btn_back_intern = InlineKeyboardButton(" Вернуться к выбору", callback_data="info_internships")
+        markup_back_intern.add(btn_back_intern)
+        
+        bot.send_message(call.message.chat.id, "Ой! Стажировки по этой специальности пока в разработке. Попробуй выбрать ИБ.", reply_markup=markup_back_intern)
 
 
     elif call.data == "info_interview":
